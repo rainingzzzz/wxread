@@ -1,6 +1,14 @@
 # .github/workflows/deploy.yml
 # 基于上游 findmover/wxread@main（2026-09-29，含 PR #138~#141）改造
 # 改动：2 次/天、失败重试、失败通知+日志、超时保护、去掉写死 DNS
+#
+# 【时间口径 · 方案甲】cron 触发时间 ≠ 实际运行时间
+#   本仓库实测排队延迟约 8h44m（11/11~11/14 连续 4 天精确落在 09:51）
+#   第 1 次：北京 01:07 触发 → 约 09:51 开跑 → 约 10:16 跑完
+#   第 2 次：北京 10:07 触发 → 约 18:51 开跑 → 约 19:16 跑完
+#   → 每天早上 10:30 之后确认第 1 次结果；失败则手动 Run 补一次
+#   → 每天 2 次 × READ_NUM 50（25 分钟）= 50 分钟/天 ≈ 350 分钟/周（目标 300）
+#   → READ_NUM 在 Settings → Secrets and variables → Actions → Variables 里设 50
 name: wxread
 
 concurrency:
@@ -9,10 +17,10 @@ concurrency:
 
 on:
   schedule:
-    # 北京时间 09:07（UTC 01:07），非整点避开调度高峰
-    - cron: '7 1 * * *'
-    # 北京时间 21:07（UTC 13:07），第二次运行多一次刷新 wr_skey 的机会
-    - cron: '7 13 * * *'
+    # 第 1 次：北京时间 01:07 触发（UTC 前一天 17:07），与原方案一致
+    - cron: '7 17 * * *'
+    # 第 2 次：北京时间 10:07 触发（UTC 02:07）
+    - cron: '7 2 * * *'
   workflow_dispatch:
 
 permissions:
